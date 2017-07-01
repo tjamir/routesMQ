@@ -11,6 +11,8 @@ import br.ufpe.cin.routesmq.distribution.message.ServiceDestination;
  */
 public interface MessageRepository {
 
+    void addMessage(ApplicationMessage message);
+
     public List<ApplicationMessage> getMessages(PeerDestination destination);
 
 

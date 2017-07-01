@@ -11,7 +11,9 @@ import org.mapdb.DBMaker;
 import org.mapdb.IndexTreeList;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Created by tjamir on 7/1/17.
@@ -26,7 +28,8 @@ public class MapDBMessageRepository implements MessageRepository {
 
     }
 
-    public void addMessage (ApplicationMessage message){
+    @Override
+    public void addMessage(ApplicationMessage message){
         if(message instanceof PeerApplicationMessage){
             addPeerMessage((PeerApplicationMessage) message);
         }else if( message instanceof ServiceApplicationMessage){
@@ -34,23 +37,37 @@ public class MapDBMessageRepository implements MessageRepository {
         }
     }
 
-    private void addServiceMessage(ServiceApplicationMessage message) {
-        DB.IndexTreeListMaker<Object> treeListMaker = db.indexTreeList("service:" + message.getDestination().getDestination().getServiceUUid().toString());
-        IndexTreeList<Object> list = treeListMaker.createOrOpen();
-        list.add(message);
+    private void addServiceMessage(ServiceApplicationMessage serviceApplicationMessage) {
+        IndexTreeList<Object> list = getServiceMessageList(serviceApplicationMessage.getDestination());
+        list.add(serviceApplicationMessage);
+    }
+
+    private IndexTreeList<Object> getServiceMessageList(ServiceDestination service) {
+        DB.IndexTreeListMaker<Object> treeListMaker = db.indexTreeList("service:" + service.getDestination().getServiceUUid().toString());
+        return treeListMaker.createOrOpen();
     }
 
     private void addPeerMessage(PeerApplicationMessage message) {
-        DB.IndexTreeListMaker<Object> treeListMaker = db.indexTreeList("peer:" + message.getDestination().getDestinationPeer().getPeerId().toString());
-        IndexTreeList<Object> list = treeListMaker.createOrOpen();
+        IndexTreeList<Object> list = getPeerMessageList(message.getDestination());
         list.add(message);
     }
 
+    private IndexTreeList<Object> getPeerMessageList(PeerDestination peerDestination) {
+        DB.IndexTreeListMaker<Object> treeListMaker = db.indexTreeList("peer:" + peerDestination.
+                getDestinationPeer().getPeerId().toString());
+        return treeListMaker.createOrOpen();
+    }
+
     public List<ApplicationMessage> getMessages(PeerDestination destination) {
-        return null;
+        List<ApplicationMessage> list =new ArrayList<>();
+        list.addAll(getPeerMessageList(destination).stream().map(o -> (PeerApplicationMessage)o).collect(Collectors.toList()));
+        return list;
+
     }
 
     public List<ApplicationMessage> getMessages(ServiceDestination serviceDestination) {
-        return null;
+        List<ApplicationMessage> list =new ArrayList<>();
+        list.addAll(getServiceMessageList(serviceDestination).stream().map(o -> (PeerApplicationMessage)o).collect(Collectors.toList()));
+        return list;
     }
 }
