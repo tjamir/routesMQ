@@ -1,9 +1,11 @@
-package br.ufpe.cin.routesmq.message;
+package br.ufpe.cin.routesmq.packet;
+
+import br.ufpe.cin.routesmq.message.ApplicationMessage;
 
 /**
  * Created by tjamir on 6/24/17.
  */
-public class DirectMessage extends Message {
+public class DirectPacket extends Packet {
 
     private String hostAddress;
 

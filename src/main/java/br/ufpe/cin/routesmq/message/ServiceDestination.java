@@ -7,13 +7,13 @@ import br.ufpe.cin.routesmq.service.ServiceDescriptor;
  */
 public class ServiceDestination implements Destination{
 
-    public ServiceDescriptor getServiceDestination() {
-        return serviceDestination;
-    }
+    private ServiceDescriptor serviceDestination;
 
-    public void setServiceDestination(ServiceDescriptor serviceDestination) {
+    public ServiceDestination(ServiceDescriptor serviceDestination) {
         this.serviceDestination = serviceDestination;
     }
 
-    private ServiceDescriptor serviceDestination;
+    public ServiceDescriptor getDestination(){
+        return serviceDestination;
+    }
 }

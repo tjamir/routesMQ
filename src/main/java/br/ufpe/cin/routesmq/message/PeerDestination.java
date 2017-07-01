@@ -10,11 +10,11 @@ public class PeerDestination implements Destination{
     private PeerDescriptor peerDestination;
 
 
-    public PeerDescriptor getPeerDestination() {
-        return peerDestination;
+    public PeerDestination(PeerDescriptor peerDestination) {
+        this.peerDestination = peerDestination;
     }
 
-    public void setPeerDestination(PeerDescriptor peerDestination) {
-        this.peerDestination = peerDestination;
+    public PeerDescriptor getDestinationPeer(){
+        return peerDestination;
     }
 }
