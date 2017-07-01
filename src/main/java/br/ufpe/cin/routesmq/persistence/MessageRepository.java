@@ -11,6 +11,8 @@ import java.util.List;
  */
 public interface MessageRepository {
 
+    void addMessage(ApplicationMessage message);
+
     public List<ApplicationMessage> getMessages(PeerDestination destination);
 
 
