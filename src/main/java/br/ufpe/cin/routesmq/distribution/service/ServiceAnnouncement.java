@@ -1,4 +1,4 @@
-package br.ufpe.cin.routesmq.service;
+package br.ufpe.cin.routesmq.distribution.service;
 
 import sun.print.ServiceDialog;
 

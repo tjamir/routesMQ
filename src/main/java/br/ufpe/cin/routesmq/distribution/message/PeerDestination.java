@@ -1,6 +1,6 @@
-package br.ufpe.cin.routesmq.message;
+package br.ufpe.cin.routesmq.distribution.message;
 
-import br.ufpe.cin.routesmq.service.PeerDescriptor;
+import br.ufpe.cin.routesmq.distribution.service.PeerDescriptor;
 
 /**
  * Created by tjamir on 6/24/17.

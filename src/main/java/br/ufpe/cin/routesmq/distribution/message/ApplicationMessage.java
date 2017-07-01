@@ -1,8 +1,8 @@
-package br.ufpe.cin.routesmq.message;
-
-import br.ufpe.cin.routesmq.service.PeerDescriptor;
+package br.ufpe.cin.routesmq.distribution.message;
 
 import java.io.Serializable;
+
+import br.ufpe.cin.routesmq.distribution.service.PeerDescriptor;
 
 /**
  * Created by tjamir on 6/24/17.

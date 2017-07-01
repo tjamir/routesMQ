@@ -1,4 +1,4 @@
-package br.ufpe.cin.routesmq.service;
+package br.ufpe.cin.routesmq.distribution.service;
 
 import java.io.Serializable;
 import java.util.UUID;

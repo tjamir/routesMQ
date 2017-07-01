@@ -1,8 +1,8 @@
-package br.ufpe.cin.routesmq.packet;
-
-import br.ufpe.cin.routesmq.message.PeerDestination;
+package br.ufpe.cin.routesmq.distribution.packet;
 
 import java.util.List;
+
+import br.ufpe.cin.routesmq.distribution.message.PeerDestination;
 
 /**
  * Created by tjamir on 7/1/17.

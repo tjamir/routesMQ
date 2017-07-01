@@ -1,10 +1,10 @@
-package br.ufpe.cin.routesmq.persistence;
-
-import br.ufpe.cin.routesmq.message.ApplicationMessage;
-import br.ufpe.cin.routesmq.message.PeerDestination;
-import br.ufpe.cin.routesmq.message.ServiceDestination;
+package br.ufpe.cin.routesmq.distribution.persistence;
 
 import java.util.List;
+
+import br.ufpe.cin.routesmq.distribution.message.ApplicationMessage;
+import br.ufpe.cin.routesmq.distribution.message.PeerDestination;
+import br.ufpe.cin.routesmq.distribution.message.ServiceDestination;
 
 /**
  * Created by tjamir on 7/1/17.

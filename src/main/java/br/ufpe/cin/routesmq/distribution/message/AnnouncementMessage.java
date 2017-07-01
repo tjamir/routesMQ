@@ -1,6 +1,6 @@
-package br.ufpe.cin.routesmq.message;
+package br.ufpe.cin.routesmq.distribution.message;
 
-import br.ufpe.cin.routesmq.announcement.Announcement;
+import br.ufpe.cin.routesmq.distribution.Announcement.Announcement;
 
 /**
  * Created by tjamir on 7/1/17.

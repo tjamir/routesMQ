@@ -1,4 +1,4 @@
-package br.ufpe.cin.routesmq.announcement;
+package br.ufpe.cin.routesmq.distribution.Announcement;
 
 import java.io.Serializable;
 

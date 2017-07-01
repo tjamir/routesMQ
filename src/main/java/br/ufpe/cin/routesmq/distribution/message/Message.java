@@ -1,4 +1,4 @@
-package br.ufpe.cin.routesmq.message;
+package br.ufpe.cin.routesmq.distribution.message;
 
 import java.io.Serializable;
 

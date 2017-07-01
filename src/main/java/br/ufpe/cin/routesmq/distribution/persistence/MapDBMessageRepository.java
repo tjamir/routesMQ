@@ -1,6 +1,11 @@
-package br.ufpe.cin.routesmq.persistence;
+package br.ufpe.cin.routesmq.distribution.persistence;
 
-import br.ufpe.cin.routesmq.message.*;
+import br.ufpe.cin.routesmq.distribution.message.ApplicationMessage;
+import br.ufpe.cin.routesmq.distribution.message.PeerApplicationMessage;
+import br.ufpe.cin.routesmq.distribution.message.PeerDestination;
+import br.ufpe.cin.routesmq.distribution.message.ServiceApplicationMessage;
+import br.ufpe.cin.routesmq.distribution.message.ServiceDestination;
+import br.ufpe.cin.routesmq.distribution.message.*;
 import org.mapdb.DB;
 import org.mapdb.DBMaker;
 import org.mapdb.IndexTreeList;

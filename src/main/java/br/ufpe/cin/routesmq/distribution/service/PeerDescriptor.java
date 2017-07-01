@@ -1,4 +1,4 @@
-package br.ufpe.cin.routesmq.service;
+package br.ufpe.cin.routesmq.distribution.service;
 
 import java.util.List;
 import java.util.UUID;

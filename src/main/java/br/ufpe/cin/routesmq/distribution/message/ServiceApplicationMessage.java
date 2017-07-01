@@ -1,4 +1,4 @@
-package br.ufpe.cin.routesmq.message;
+package br.ufpe.cin.routesmq.distribution.message;
 
 /**
  * Created by tjamir on 7/1/17.
