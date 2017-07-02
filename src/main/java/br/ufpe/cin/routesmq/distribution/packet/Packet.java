@@ -12,9 +12,10 @@ public class Packet {
         return message;
     }
 
-    public void setMessage(Message message) {
-        this.message = message;
-    }
 
     protected Message message;
+
+    public Packet(Message message) {
+        this.message = message;
+    }
 }

@@ -2,19 +2,21 @@ package br.ufpe.cin.routesmq.distribution.message;
 
 import br.ufpe.cin.routesmq.distribution.Announcement.Announcement;
 
+import java.util.List;
+
 /**
  * Created by tjamir on 7/1/17.
  */
 public class AnnouncementMessage extends Message{
 
-    private Announcement announcement;
+    private List<Announcement> announcement;
 
 
-    public AnnouncementMessage(Announcement announcement) {
+    public AnnouncementMessage(List<Announcement> announcement) {
         this.announcement = announcement;
     }
 
-    public void setAnnouncement(Announcement announcement) {
+    public void setAnnouncement(List<Announcement> announcement) {
         this.announcement = announcement;
     }
 }
