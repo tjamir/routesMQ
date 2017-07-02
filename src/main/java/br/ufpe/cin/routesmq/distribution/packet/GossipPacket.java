@@ -12,7 +12,6 @@ public class GossipPacket extends Packet{
 
     private List<PeerDescriptor> visitedList;
 
-
     public GossipPacket(Message message) {
         super(message);
     }

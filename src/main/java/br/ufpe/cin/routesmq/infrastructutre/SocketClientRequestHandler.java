@@ -20,7 +20,7 @@ public class SocketClientRequestHandler implements ClientRequestHandler{
 	DataOutputStream outToServer = null;
 	DataInputStream inFromServer = null;
 
-	public void RequestHandler(String host, int port, boolean expectedReply) {
+	public SocketClientRequestHandler(String host, int port, boolean expectedReply) {
 		this.host = host;
 		this.port = port;
 		this.setExpectedReply(expectedReply);

@@ -7,8 +7,7 @@ import java.io.IOException;
  */
 public interface ClientRequestHandler {
 	
-	public void RequestHandler(String host, int port, boolean expectedReply);
-	
+
 	public byte[] send(byte[] data) throws IOException, InterruptedException;
 	
 	public byte[] receive() throws IOException, InterruptedException;

@@ -31,8 +31,9 @@ public class PeerManager {
     private MessageRouter messageRouter;
 
 
-
     private Set<ServiceDescriptor> providedServices;
+
+
 
 
     public final static Long DEFAULT_PING_INTERVAL=5000L;
@@ -48,6 +49,14 @@ public class PeerManager {
         if(port == null){
             port = ((int)peerId.getLeastSignificantBits()%10000)+1024;
 
+        }
+
+        if(pingInterval==null){
+            pingInterval=DEFAULT_PING_INTERVAL;
+        }
+
+        if(announceInterval==null){
+            announceInterval = DEFAULT_ANNOUNCE_INTERVAL;
         }
 
         List<String> networkInterfaces=getNetwokrInterfaces();
@@ -74,6 +83,11 @@ public class PeerManager {
             }
         }, 0L, announceInterval);
 
+       this.messageRouter=new MessageRouter();
+       messageRouter.setMe(me);
+       messageRouter.setMarshaller(new Marshaller());
+
+       messageRouter.init();
 
 
 
@@ -92,7 +106,7 @@ public class PeerManager {
 
         AnnouncementMessage message = new AnnouncementMessage(announcements);
 
-        messageRouter.broadCastMesse(message);
+        messageRouter.broadCastMessage(message);
 
 
 
@@ -100,6 +114,8 @@ public class PeerManager {
     }
 
     private void pingKnownPeers() {
+        seeds.forEach(seed -> messageRouter.pingSeed(seed));
+        messageRouter.pingKnownPeers();
 
 
     }
