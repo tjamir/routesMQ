@@ -1,6 +1,7 @@
 package br.ufpe.cin.routesmq.distribution.message;
 
 import java.io.Serializable;
+import java.util.UUID;
 
 import br.ufpe.cin.routesmq.distribution.service.PeerDescriptor;
 
@@ -8,6 +9,13 @@ import br.ufpe.cin.routesmq.distribution.service.PeerDescriptor;
  * Created by tjamir on 6/24/17.
  */
 public abstract class ApplicationMessage extends Message{
+
+
+    protected UUID messageId;
+    public ApplicationMessage(){
+        this.messageId=UUID.randomUUID();
+    }
+
 
 
     protected PeerDescriptor source;
@@ -33,5 +41,24 @@ public abstract class ApplicationMessage extends Message{
 
     public void setPayload(byte[] payload) {
         this.payload = payload;
+    }
+
+    public UUID getMessageId() {
+        return messageId;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        ApplicationMessage message = (ApplicationMessage) o;
+
+        return messageId.equals(message.messageId);
+    }
+
+    @Override
+    public int hashCode() {
+        return messageId.hashCode();
     }
 }

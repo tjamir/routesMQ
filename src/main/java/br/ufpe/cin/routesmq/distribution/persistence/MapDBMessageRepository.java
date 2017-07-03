@@ -70,4 +70,22 @@ public class MapDBMessageRepository implements MessageRepository {
         list.addAll(getServiceMessageList(serviceDestination).stream().map(o -> (PeerApplicationMessage)o).collect(Collectors.toList()));
         return list;
     }
+
+    @Override
+    public void removeMessage(Destination destination, ApplicationMessage message) {
+        if(destination instanceof  PeerDestination){
+            removePeerMessage((PeerDestination)destination, message);
+        }else if (destination instanceof ServiceDestination){
+            removeServiceMessage((ServiceDestination)destination, message);
+        }
+
+    }
+
+    private void removeServiceMessage(ServiceDestination destination, ApplicationMessage message) {
+       getServiceMessageList(destination).remove(message);
+    }
+
+    private void removePeerMessage(PeerDestination destination, ApplicationMessage message) {
+        getPeerMessageList(destination).remove(message);
+    }
 }

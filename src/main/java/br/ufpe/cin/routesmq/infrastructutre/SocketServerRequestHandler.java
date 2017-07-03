@@ -1,59 +1,158 @@
 package br.ufpe.cin.routesmq.infrastructutre;
 
+import br.ufpe.cin.routesmq.distribution.Marshaller;
+import br.ufpe.cin.routesmq.distribution.MessageRouter;
+import br.ufpe.cin.routesmq.distribution.QueueManager;
+import br.ufpe.cin.routesmq.distribution.packet.*;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Created by tjamir on 6/23/17.
  */
 public class SocketServerRequestHandler {
+
+	int numberOfThreads=10;
+
+
 	private int port;
-	private ServerSocket Socket = null;
+	private ServerSocket socket = null;
 
-	Socket connectionSocket = null;
+	private MessageRouter router;
 
-	int sentMessageSize;
-	int receivedMessageSize;
-	DataOutputStream outToClient = null;
-	DataInputStream inFromClient = null;
 
-	public void RequestHandler(int port) throws IOException {
+	private Marshaller marshaller;
+
+
+
+	public void start() throws IOException {
+		socket=new ServerSocket(port);
+		Runnable service= () ->
+		{
+
+			ExecutorService executorService = Executors.newFixedThreadPool(numberOfThreads);
+			while(true){
+
+				try {
+					Socket clientSocket=socket.accept();
+					executorService.submit(new Worker(clientSocket));
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		};
+		new Thread(service, "server-request.handler").start();
+	}
+
+
+	public void setRouter(MessageRouter router) {
+		this.router = router;
+	}
+
+	public void setMarshaller(Marshaller marshaller) {
+		this.marshaller = marshaller;
+	}
+
+	public SocketServerRequestHandler(int port) throws IOException {
 		this.port = port;
-		this.Socket = new ServerSocket(this.port);
 	}
 
-	public byte[] receiveRequest() throws IOException, Throwable {
+	class Worker implements Runnable{
 
-		byte[] data = null;
+		Socket connectionSocket = null;
 
-		connectionSocket = Socket.accept();
+		int sentMessageSize;
+		int receivedMessageSize;
+		DataOutputStream outToClient = null;
+		DataInputStream inFromClient = null;
 
-		outToClient = new DataOutputStream(connectionSocket.getOutputStream());
-		inFromClient = new DataInputStream(connectionSocket.getInputStream());
+		public Worker(java.net.Socket connectionSocket) {
+			this.connectionSocket = connectionSocket;
+		}
 
-		receivedMessageSize = inFromClient.readInt();
-		data = new byte[receivedMessageSize];
+		byte[] receiveRequest() throws IOException {
 
-		inFromClient.read(data, 0, receivedMessageSize);
+			byte[] data = null;
 
-		return data;
+
+			outToClient = new DataOutputStream(connectionSocket.getOutputStream());
+			inFromClient = new DataInputStream(connectionSocket.getInputStream());
+
+			receivedMessageSize = inFromClient.readInt();
+			data = new byte[receivedMessageSize];
+
+			inFromClient.read(data, 0, receivedMessageSize);
+
+			return data;
+		}
+
+		public void sendReply(byte[] data) throws IOException, InterruptedException {
+
+			sentMessageSize = data.length;
+			outToClient.writeInt(sentMessageSize);
+			outToClient.write(data);
+			outToClient.flush();
+
+			connectionSocket.close();
+			outToClient.close();
+			inFromClient.close();
+		}
+
+
+		@Override
+		public void run() {
+			try {
+				byte[] data=receiveRequest();
+				byte[] reply=processRequest(data);
+				if(data!=null)
+					sendReply(reply);
+
+
+			} catch (Exception exception) {
+				exception.printStackTrace();
+			}
+
+		}
 	}
 
-	public void sendReply(byte[] data) throws IOException, InterruptedException {
+	private byte[] processRequest(byte[] data) throws IOException, ClassNotFoundException {
+		Packet packet = (Packet) marshaller.unMarshall(data);
 
-		sentMessageSize = data.length;
-		outToClient.writeInt(sentMessageSize);
-		outToClient.write(data);
-		outToClient.flush();
 
-		connectionSocket.close();
-		outToClient.close();
-		inFromClient.close();
+		if(packet instanceof PingPacket){
+			PongPacket pongPacket=new PongPacket(router.getMe(), ((PingPacket) packet).getInetAddress());
+			return marshaller.marshall(pongPacket);
+		}
+		if(packet instanceof GossipPacket){
+			GossipPacket gossipPacket= (GossipPacket) packet;
+			router.processGossipPacket(gossipPacket);
+			AckPacket ackPacket = new AckPacket();
+			return marshaller.marshall(ackPacket);
+		}
+		if(packet instanceof RoutedPacket){
+			RoutedPacket routedPacket= (RoutedPacket) packet;
+			router.processRoutedPacket(routedPacket);
+			AckPacket ackPacket = new AckPacket();
+			return marshaller.marshall(ackPacket);
+		}
+		if(packet instanceof DirectPacket){
+			DirectPacket directPacket= (DirectPacket) packet;
+			router.processDirectPacket(directPacket);
+			AckPacket ackPacket = new AckPacket();
+			return marshaller.marshall(ackPacket);
+		}
 
-		return;
+		throw new UnsupportedOperationException("Unknown Package Type");
+
+
+
 	}
+
 
 }

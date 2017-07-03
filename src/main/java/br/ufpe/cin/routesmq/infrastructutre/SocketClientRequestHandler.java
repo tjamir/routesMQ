@@ -26,6 +26,8 @@ public class SocketClientRequestHandler implements ClientRequestHandler{
 		this.setExpectedReply(expectedReply);
 	}
 
+
+
 	public byte[] send(byte[] data) throws IOException, InterruptedException {
 
 		clientSocket = new Socket(this.host, this.port);
@@ -61,6 +63,8 @@ public class SocketClientRequestHandler implements ClientRequestHandler{
 		}
 		return data;
 	}
+
+
 
 	public boolean isExpectedReply() {
 		return expectedReply;

@@ -3,6 +3,7 @@ package br.ufpe.cin.routesmq.distribution.persistence;
 import java.util.List;
 
 import br.ufpe.cin.routesmq.distribution.message.ApplicationMessage;
+import br.ufpe.cin.routesmq.distribution.message.Destination;
 import br.ufpe.cin.routesmq.distribution.message.PeerDestination;
 import br.ufpe.cin.routesmq.distribution.message.ServiceDestination;
 
@@ -18,5 +19,6 @@ public interface MessageRepository {
 
     public List<ApplicationMessage> getMessages(ServiceDestination serviceDestination);
 
+    void removeMessage(Destination destination, ApplicationMessage message);
 }
 

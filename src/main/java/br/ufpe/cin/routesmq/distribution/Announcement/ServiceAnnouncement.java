@@ -1,30 +1,40 @@
 package br.ufpe.cin.routesmq.distribution.Announcement;
 
+import br.ufpe.cin.routesmq.distribution.Announcement.Announcement;
 import br.ufpe.cin.routesmq.distribution.message.ServiceDestination;
 import br.ufpe.cin.routesmq.distribution.service.PeerDescriptor;
+import br.ufpe.cin.routesmq.distribution.service.ServiceDescriptor;
+import sun.print.ServiceDialog;
+
+import java.io.Serializable;
 
 /**
- * Created by tjamir on 7/1/17.
+ * Created by tjamir on 6/24/17.
  */
 public class ServiceAnnouncement extends Announcement{
 
-    private ServiceDestination serviceDestination;
+    private ServiceDescriptor serviceDescriptor;
 
+    private PeerDescriptor peerDescriptor;
 
-    private PeerDescriptor serviceProvider;
-
-
-    public ServiceAnnouncement(ServiceDestination serviceDestination, PeerDescriptor serviceProvider) {
-        this.serviceDestination = serviceDestination;
-        this.serviceProvider = serviceProvider;
+    public ServiceAnnouncement(ServiceDescriptor serviceDescriptor, PeerDescriptor peerDescriptor) {
+        this.serviceDescriptor = serviceDescriptor;
+        this.peerDescriptor = peerDescriptor;
     }
 
-    public ServiceDestination getServiceDestination() {
-        return serviceDestination;
+    public ServiceDescriptor getServiceDescriptor() {
+        return serviceDescriptor;
     }
 
-    public PeerDescriptor getServiceProvider() {
-        return serviceProvider;
+    public void setServiceDescriptor(ServiceDescriptor serviceDescriptor) {
+        this.serviceDescriptor = serviceDescriptor;
     }
 
+    public PeerDescriptor getPeerDescriptor() {
+        return peerDescriptor;
+    }
+
+    public void setPeerDescriptor(PeerDescriptor peerDescriptor) {
+        this.peerDescriptor = peerDescriptor;
+    }
 }

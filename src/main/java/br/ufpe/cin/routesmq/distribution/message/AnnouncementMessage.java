@@ -16,7 +16,8 @@ public class AnnouncementMessage extends Message{
         this.announcement = announcement;
     }
 
-    public void setAnnouncement(List<Announcement> announcement) {
-        this.announcement = announcement;
+
+    public List<Announcement> getAnnouncement() {
+        return announcement;
     }
 }

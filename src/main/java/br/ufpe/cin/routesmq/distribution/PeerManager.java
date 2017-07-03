@@ -83,13 +83,15 @@ public class PeerManager {
             }
         }, 0L, announceInterval);
 
+       this.me = new PeerDescriptor();
+       me.setPort(port);
+       me.setPeerId(peerId);
+       me.setLocalInterfaces(networkInterfaces);
+
        this.messageRouter=new MessageRouter();
        messageRouter.setMe(me);
        messageRouter.setMarshaller(new Marshaller());
-
        messageRouter.init();
-
-
 
     }
 
@@ -101,15 +103,12 @@ public class PeerManager {
             announcements.add(new RouteAnnouncement(me, peer));
         }
         for(ServiceDescriptor serviceDescriptor:providedServices){
-            announcements.add(new ServiceAnnouncement(new ServiceDestination(serviceDescriptor), me));
+            announcements.add(new ServiceAnnouncement(serviceDescriptor, me));
         }
 
         AnnouncementMessage message = new AnnouncementMessage(announcements);
 
         messageRouter.broadCastMessage(message);
-
-
-
 
     }
 
@@ -128,6 +127,9 @@ public class PeerManager {
         }
         return networkAddresses;
     }
+
+
+
 
 
 }

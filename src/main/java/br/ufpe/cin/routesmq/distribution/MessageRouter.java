@@ -1,5 +1,6 @@
 package br.ufpe.cin.routesmq.distribution;
 
+import br.ufpe.cin.routesmq.distribution.Announcement.*;
 import br.ufpe.cin.routesmq.distribution.message.*;
 import br.ufpe.cin.routesmq.distribution.packet.*;
 import br.ufpe.cin.routesmq.distribution.service.PeerDescriptor;
@@ -36,11 +37,16 @@ public class MessageRouter {
 
     private Map<ServiceDescriptor, List<PeerDescriptor>> serviceList;
 
+    private QueueManager queueManager;
+
+    private List<AnnouncementListener> listeners;
+
 
     public void init(){
         topology=new ConcurrentHashMap<>();
         reachableRoutes=new ConcurrentHashMap<>();
         serviceList=new ConcurrentHashMap<>();
+        listeners=new CopyOnWriteArrayList<>();
 
     }
 
@@ -134,6 +140,7 @@ public class MessageRouter {
     public void broadCastMessage(Message message){
         GossipPacket packet = new GossipPacket(message);
         List<PeerDescriptor> list = getReachablePeers();
+        list.add(me);
         packet.setVisitedList(list);
         sendGossipPacket(packet, list);
 
@@ -167,7 +174,7 @@ public class MessageRouter {
 
 
     public void pingSeed(Seed seed) {
-        PingPacket pingPacket=new PingPacket();
+        PingPacket pingPacket=new PingPacket(null);
 
         try {
             byte[] replyData=new SocketClientRequestHandler(seed.getHost(), seed.getPort(), true).send(marshaller.marshall(pingPacket));
@@ -187,7 +194,7 @@ public class MessageRouter {
 
 
     public void pingKnownPeers() {
-        PingPacket pingPacket=new PingPacket();
+        PingPacket pingPacket=new PingPacket(null);
 
         for(PeerDescriptor peerDescriptor: topology.keySet()) {
             for (String host : peerDescriptor.getLocalInterfaces()) {
@@ -218,5 +225,81 @@ public class MessageRouter {
                 }
             }
         }
+    }
+
+    public PeerDescriptor getMe() {
+        return me;
+    }
+
+    public void processGossipPacket(GossipPacket gossipPacket) {
+        Message message=gossipPacket.getMessage();
+        processMessage(message);
+        List<PeerDescriptor> nextPeers=reachableRoutes.keySet().stream()
+                .filter(peerDescriptor -> !gossipPacket.getVisitedList().contains(peerDescriptor))
+                .collect(Collectors.toList());
+
+        if(!nextPeers.isEmpty()){
+            gossipPacket.getVisitedList().addAll(nextPeers);
+            sendGossipPacket(gossipPacket, nextPeers);
+        }
+
+
+
+    }
+
+    private void processMessage(Message message) {
+
+        if(message instanceof AnnouncementMessage){
+            List<Announcement> announcements=((AnnouncementMessage) message).getAnnouncement();
+
+            announcements.forEach(announcement -> processAnnouncements(announcement));
+        } else if(message instanceof ApplicationMessage){
+            queueManager.processMessage((ApplicationMessage) message);
+        }
+    }
+
+    private void processAnnouncements(Announcement announcement) {
+        if(announcement instanceof PeerAnnouncement){
+            PeerAnnouncement peerAnnouncement= (PeerAnnouncement) announcement;
+            if(!topology.containsKey(peerAnnouncement.getPeerDescriptor())){
+                topology.put(peerAnnouncement.getPeerDescriptor(), new CopyOnWriteArrayList<>());
+            }
+        }else if(announcement instanceof RouteAnnouncement){
+            RouteAnnouncement routeAnnouncement= (RouteAnnouncement) announcement;
+            if(!topology.containsKey(routeAnnouncement.getSource())){
+                topology.put(routeAnnouncement.getSource(), new CopyOnWriteArrayList<>());
+            }
+            if(!topology.get(routeAnnouncement.getSource()).contains(routeAnnouncement.getDestination())){
+                topology.get(routeAnnouncement.getSource()).add(routeAnnouncement.getDestination());
+                try{
+                    listeners.forEach(listener->listener.routeDiscovered(routeAnnouncement));
+                }catch (Throwable t){
+                    t.printStackTrace();
+                }
+            }
+        }else if(announcement instanceof ServiceAnnouncement){
+            ServiceAnnouncement serviceAnnouncement=(ServiceAnnouncement)announcement;
+            if(!serviceList.containsKey(serviceAnnouncement.getServiceDescriptor())){
+                serviceList.put(serviceAnnouncement.getServiceDescriptor(), new CopyOnWriteArrayList<>());
+            }
+            if(!serviceList.get(serviceAnnouncement.getServiceDescriptor()).contains(serviceAnnouncement.getPeerDescriptor())){
+                serviceList.get(serviceAnnouncement.getServiceDescriptor()).add(serviceAnnouncement.getPeerDescriptor());
+                try{
+                    listeners.forEach(listener->listener.serviceDiscovered(serviceAnnouncement));
+                }catch (Throwable t){
+                    t.printStackTrace();
+                }
+            }
+        }
+    }
+
+    public void processRoutedPacket(RoutedPacket routedPacket) {
+
+        processMessage(routedPacket.getMessage());
+
+    }
+
+    public void processDirectPacket(DirectPacket directPacket) {
+        processMessage(directPacket.getMessage());
     }
 }
