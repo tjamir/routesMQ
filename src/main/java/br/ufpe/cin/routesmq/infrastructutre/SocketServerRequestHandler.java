@@ -59,7 +59,7 @@ public class SocketServerRequestHandler {
 		this.marshaller = marshaller;
 	}
 
-	public SocketServerRequestHandler(int port) throws IOException {
+	public SocketServerRequestHandler(int port) {
 		this.port = port;
 	}
 
@@ -99,6 +99,10 @@ public class SocketServerRequestHandler {
 			outToClient.write(data);
 			outToClient.flush();
 
+			close();
+		}
+
+		private void close() throws IOException {
 			connectionSocket.close();
 			outToClient.close();
 			inFromClient.close();
@@ -110,8 +114,10 @@ public class SocketServerRequestHandler {
 			try {
 				byte[] data=receiveRequest();
 				byte[] reply=processRequest(data);
-				if(data!=null)
+				if(reply!=null)
 					sendReply(reply);
+				else
+					close();
 
 
 			} catch (Exception exception) {
@@ -132,8 +138,7 @@ public class SocketServerRequestHandler {
 		if(packet instanceof GossipPacket){
 			GossipPacket gossipPacket= (GossipPacket) packet;
 			router.processGossipPacket(gossipPacket);
-			AckPacket ackPacket = new AckPacket();
-			return marshaller.marshall(ackPacket);
+			return null;
 		}
 		if(packet instanceof RoutedPacket){
 			RoutedPacket routedPacket= (RoutedPacket) packet;

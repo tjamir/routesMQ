@@ -1,12 +1,13 @@
 package br.ufpe.cin.routesmq.distribution.service;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.UUID;
 
 /**
  * Created by tjamir on 6/24/17.
  */
-public class PeerDescriptor {
+public class PeerDescriptor implements Serializable{
 
     private UUID peerId;
 
@@ -51,5 +52,15 @@ public class PeerDescriptor {
     @Override
     public int hashCode() {
         return peerId.hashCode();
+    }
+
+
+    @Override
+    public String toString() {
+        return "PeerDescriptor{" +
+                "peerId=" + peerId +
+                ", localInterfaces=" + localInterfaces +
+                ", port=" + port +
+                '}';
     }
 }

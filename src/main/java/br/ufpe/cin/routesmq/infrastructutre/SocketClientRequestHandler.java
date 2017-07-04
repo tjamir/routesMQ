@@ -4,6 +4,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.util.concurrent.ExecutorService;
 
 /**
  * Created by tjamir on 6/23/17.
@@ -19,6 +20,8 @@ public class SocketClientRequestHandler implements ClientRequestHandler{
 	Socket clientSocket = null;
 	DataOutputStream outToServer = null;
 	DataInputStream inFromServer = null;
+
+	private ExecutorService executorService;
 
 	public SocketClientRequestHandler(String host, int port, boolean expectedReply) {
 		this.host = host;

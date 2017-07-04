@@ -11,6 +11,10 @@ import org.mapdb.DBMaker;
 import org.mapdb.IndexTreeList;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -23,9 +27,18 @@ public class MapDBMessageRepository implements MessageRepository {
 
     private DB db;
 
-    public void init(){
-        db = DBMaker.fileDB(new File("localdata")).transactionEnable().make();
+    private String localFile;
 
+    public void init() throws IOException {
+
+        Path path=Paths.get("localdata/");
+        Files.createDirectories(path);
+        db = DBMaker.fileDB(new File("localdata/"+localFile)).transactionEnable().make();
+
+    }
+
+    public void setLocalFile(String localFile) {
+        this.localFile = localFile;
     }
 
     @Override

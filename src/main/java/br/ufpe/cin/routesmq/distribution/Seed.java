@@ -22,4 +22,13 @@ public class Seed {
     public int getPort() {
         return port;
     }
+
+    public String toString(){
+        return host+":"+port;
+    }
+
+    public static Seed fromString(String str){
+        String [] pars=str.split(":");
+        return new Seed(pars[0], Integer.parseInt(pars[1]));
+    }
 }

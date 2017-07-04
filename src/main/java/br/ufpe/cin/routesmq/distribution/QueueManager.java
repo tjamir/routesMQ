@@ -1,21 +1,24 @@
 package br.ufpe.cin.routesmq.distribution;
 
-import br.ufpe.cin.routesmq.distribution.message.ApplicationMessage;
-import br.ufpe.cin.routesmq.distribution.message.Destination;
-import br.ufpe.cin.routesmq.distribution.message.PeerApplicationMessage;
-import br.ufpe.cin.routesmq.distribution.message.PeerDestination;
+import br.ufpe.cin.routesmq.distribution.Announcement.AnnouncementListener;
+import br.ufpe.cin.routesmq.distribution.Announcement.RouteAnnouncement;
+import br.ufpe.cin.routesmq.distribution.Announcement.ServiceAnnouncement;
+import br.ufpe.cin.routesmq.distribution.message.*;
 import br.ufpe.cin.routesmq.distribution.persistence.MapDBMessageRepository;
 import br.ufpe.cin.routesmq.distribution.persistence.MessageRepository;
-import br.ufpe.cin.routesmq.services.DirectApplicationMessageListener;
+import br.ufpe.cin.routesmq.services.DirectMessageListener;
+import br.ufpe.cin.routesmq.services.ServiceMessageListener;
 
+import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
  * Created by tjamir on 7/2/17.
  */
-public class QueueManager {
+public class QueueManager implements AnnouncementListener{
 
     private final static int NUMBER_OF_WORKERS=10;
 
@@ -30,14 +33,26 @@ public class QueueManager {
 
 
 
-    private List<DirectApplicationMessageListener> directMessageListeners;
 
 
 
-    public  void init(){
-        messageRepository = new MapDBMessageRepository();
+    private List<DirectMessageListener> directMessageListeners;
+    private List<ServiceMessageListener> serviceMessageListeners;
+
+
+
+
+    public  void init() throws IOException {
+        MapDBMessageRepository mapDBMessageRepository = new MapDBMessageRepository();
+        messageRepository = mapDBMessageRepository;
         incomingWorkers = Executors.newFixedThreadPool(NUMBER_OF_WORKERS);
         outgoingWorkers = Executors.newFixedThreadPool(NUMBER_OF_WORKERS);
+        directMessageListeners = new CopyOnWriteArrayList<>();
+        serviceMessageListeners=new CopyOnWriteArrayList<>();
+
+        mapDBMessageRepository.setLocalFile(messageRouter.getMe().getPeerId().toString());
+        mapDBMessageRepository.init();
+
     }
 
 
@@ -52,6 +67,25 @@ public class QueueManager {
        incomingWorkers.submit(new IncomingQueueProcessor(message));
     }
 
+    public void addDirectMessageLisener(DirectMessageListener listener) {
+        directMessageListeners.add(listener);
+    }
+
+    public void addServiceMessageListener(ServiceMessageListener listener) {
+        serviceMessageListeners.add(listener);
+    }
+
+    @Override
+    public void routeDiscovered(RouteAnnouncement routeAnnouncement) {
+        System.out.println("Route found to"+routeAnnouncement.getDestination());
+        messageRepository.getMessages(new PeerDestination(routeAnnouncement.getDestination())).forEach(message ->
+        outgoingWorkers.submit(new OutgoingQueueProcessor(message)));
+    }
+
+    @Override
+    public void serviceDiscovered(ServiceAnnouncement serviceAnnouncement) {
+
+    }
 
 
     class IncomingQueueProcessor implements Runnable{
@@ -67,7 +101,8 @@ public class QueueManager {
         public void run() {
             Destination destination=message.getDestination();
             if(destination instanceof PeerDestination ){
-                if(((PeerDestination) destination).getDestinationPeer().equals(messageRouter.getMe())){
+                PeerDestination peerDestination = (PeerDestination) destination;
+                if(peerDestination.getDestinationPeer().equals(messageRouter.getMe())){
                     try{
                         directMessageListeners.forEach(l->l.onMessage((PeerApplicationMessage)message));
                     }catch (Throwable t){
@@ -75,6 +110,17 @@ public class QueueManager {
                     }
 
                 }else{
+                    queueMessage(message);
+                }
+
+            }else if(destination instanceof ServiceDestination) {
+                ServiceDestination serviceDestination = (ServiceDestination) destination;
+                if (messageRouter.getServiceList().containsKey(serviceDestination.getDestination())
+                        && messageRouter.getServiceList().get(serviceDestination.getDestination())
+                        .contains(messageRouter.getMe())) {
+                    serviceMessageListeners.forEach(l -> l.onMessage((ServiceApplicationMessage) message));
+
+                }else {
                     queueMessage(message);
                 }
 
@@ -102,5 +148,7 @@ public class QueueManager {
         }
     }
 
-
+    public void setMessageRouter(MessageRouter messageRouter) {
+        this.messageRouter = messageRouter;
+    }
 }
