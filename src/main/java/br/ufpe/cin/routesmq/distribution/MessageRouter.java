@@ -14,12 +14,8 @@ import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.*;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 /**
@@ -42,32 +38,38 @@ public class MessageRouter {
 
     private List<AnnouncementListener> listeners;
 
+    private ExecutorService pingExecutor;
+
+    private Set<ApplicationMessage> outgoingMessages;
+
 
     public void init() throws IOException {
-        topology=new ConcurrentHashMap<>();
+        topology = new ConcurrentHashMap<>();
         topology.put(me, new CopyOnWriteArrayList<>());
-        reachableRoutes=new ConcurrentHashMap<>();
-        serviceList=new ConcurrentHashMap<>();
-        listeners=new CopyOnWriteArrayList<>();
-        SocketServerRequestHandler socketServerRequestHandler=new SocketServerRequestHandler(me.getPort());
+        reachableRoutes = new ConcurrentHashMap<>();
+        serviceList = new ConcurrentHashMap<>();
+        listeners = new CopyOnWriteArrayList<>();
+        SocketServerRequestHandler socketServerRequestHandler = new SocketServerRequestHandler(me.getPort());
         socketServerRequestHandler.setRouter(this);
         socketServerRequestHandler.setMarshaller(marshaller);
         socketServerRequestHandler.start();
+        pingExecutor = Executors.newFixedThreadPool(1);
+
 
 
     }
 
-    public List<PeerDescriptor> getReachablePeers(){
+    public List<PeerDescriptor> getReachablePeers() {
         return new ArrayList<>(reachableRoutes.keySet());
     }
 
     public boolean sendMessage(Message message) {
-        if(message instanceof PeerApplicationMessage){
+        if (message instanceof PeerApplicationMessage) {
             return sendPeerMessage((PeerApplicationMessage) message);
-        }else if (message instanceof ServiceApplicationMessage){
+        } else if (message instanceof ServiceApplicationMessage) {
             return sendServiceMessage((ServiceApplicationMessage) message);
         }
-        return  false;
+        return false;
 
 
     }
@@ -86,13 +88,13 @@ public class MessageRouter {
     }
 
     private boolean sendServiceMessage(ServiceApplicationMessage message) {
-        boolean result=false;
+        boolean result = false;
         List<PeerDescriptor> destinations = serviceList.get(message.getDestination().getDestination());
-        List<List<PeerDescriptor>>routes =destinations.stream().map(peerDescriptor -> findBestRoute(me, peerDescriptor))
-        .filter(list -> list!=null).sorted(Comparator.comparingInt(List::size)).collect(Collectors.toList());
-        if(routes!=null && routes.size()>0){
+        List<List<PeerDescriptor>> routes = destinations.stream().map(peerDescriptor -> findBestRoute(me, peerDescriptor))
+                .filter(list -> list != null).sorted(Comparator.comparingInt(List::size)).collect(Collectors.toList());
+        if (routes != null && routes.size() > 0) {
             List<PeerDescriptor> route = routes.get(0);
-            PeerDescriptor finalDestination = route.get(route.size()-1);
+            PeerDescriptor finalDestination = route.get(route.size() - 1);
             result = sendByRoute(message, finalDestination, route);
         }
         return result;
@@ -100,20 +102,20 @@ public class MessageRouter {
     }
 
     private boolean sendPeerMessage(PeerApplicationMessage message) {
-        PeerDescriptor peerDescriptor=message.getDestination().getDestinationPeer();
-        boolean result =false;
-        if(topology.containsKey(peerDescriptor)){
-            List<PeerDescriptor> route=findBestRoute(me, peerDescriptor);
+        PeerDescriptor peerDescriptor = message.getDestination().getDestinationPeer();
+        boolean result = false;
+        if (topology.containsKey(peerDescriptor)) {
+            List<PeerDescriptor> route = findBestRoute(me, peerDescriptor);
             result = sendByRoute(message, peerDescriptor, route);
         }
-        return  result;
+        return result;
 
     }
 
     private boolean sendByRoute(Message message, PeerDescriptor destination, List<PeerDescriptor> route) {
-        boolean result=false;
-        if (route != null&&!route.isEmpty()) {
-            PeerDescriptor nextHop=route.get(1);
+        boolean result = false;
+        if (route != null && !route.isEmpty()) {
+            PeerDescriptor nextHop = route.get(1);
             Packet packet = null;
             if (route.size() == 2) {
                 packet = new DirectPacket(message, reachableRoutes.get(destination), route.get(1).getPort());
@@ -137,20 +139,20 @@ public class MessageRouter {
     }
 
 
-    private List<PeerDescriptor> findBestRoute(PeerDescriptor origin, PeerDescriptor peerDestination){
+    private List<PeerDescriptor> findBestRoute(PeerDescriptor origin, PeerDescriptor peerDestination) {
 
-        DirectedGraph<PeerDescriptor, DefaultEdge> graph=new DefaultDirectedGraph<>(DefaultEdge.class);
+        DirectedGraph<PeerDescriptor, DefaultEdge> graph = new DefaultDirectedGraph<>(DefaultEdge.class);
         topology.keySet().forEach(peerDescriptor -> graph.addVertex(peerDescriptor));
-        topology.entrySet().forEach(e->
-                    e.getValue().forEach(v->graph.addEdge(e.getKey(), v))
+        topology.entrySet().forEach(e ->
+                e.getValue().forEach(v -> graph.addEdge(e.getKey(), v))
         );
         DijkstraShortestPath<PeerDescriptor, DefaultEdge> dijkstraShortestPath = new DijkstraShortestPath<PeerDescriptor, DefaultEdge>(graph);
-        GraphPath<PeerDescriptor, DefaultEdge> path=dijkstraShortestPath.getPath(origin, peerDestination);
+        GraphPath<PeerDescriptor, DefaultEdge> path = dijkstraShortestPath.getPath(origin, peerDestination);
         return path.getVertexList();
 
     }
 
-    public void broadCastMessage(Message message){
+    public void broadCastMessage(Message message) {
         GossipPacket packet = new GossipPacket(message);
         List<PeerDescriptor> list = getReachablePeers();
         packet.setVisitedList(new ArrayList<>(list));
@@ -164,10 +166,10 @@ public class MessageRouter {
             byte[] packetData = marshaller.marshall(packet);
             list.stream().forEach(
 
-                    peerDescriptor ->{
+                    peerDescriptor -> {
                         try {
                             sendPacket(packetData, peerDescriptor, false);
-                        }catch (Exception e){
+                        } catch (Exception e) {
                             e.printStackTrace();
                         }
 
@@ -183,23 +185,23 @@ public class MessageRouter {
         SocketClientRequestHandler socketClientRequestHandler = new SocketClientRequestHandler(reachableRoutes.get(peerDescriptor), peerDescriptor.getPort(),
                 expectedResponse);
         socketClientRequestHandler.send(packetData);
-        if(expectedResponse){
-            return  socketClientRequestHandler.receive();
-        }else{
-            return  null;
+        if (expectedResponse) {
+            return socketClientRequestHandler.receive();
+        } else {
+            return null;
         }
 
     }
 
 
     public void pingSeed(Seed seed) {
-        PingPacket pingPacket=new PingPacket(seed.getHost());
+        PingPacket pingPacket = new PingPacket(me, seed.getHost());
 
         try {
             SocketClientRequestHandler socketClientRequestHandler = new SocketClientRequestHandler(seed.getHost(), seed.getPort(), true);
             socketClientRequestHandler.send(marshaller.marshall(pingPacket));
-            byte[] replyData= socketClientRequestHandler.receive();
-            Object reply=marshaller.unMarshall(replyData);
+            byte[] replyData = socketClientRequestHandler.receive();
+            Object reply = marshaller.unMarshall(replyData);
             processPongPacket(reply);
         } catch (IOException e) {
             e.printStackTrace();
@@ -210,30 +212,33 @@ public class MessageRouter {
         }
 
 
-
     }
 
 
     public void pingKnownPeers() {
 
 
-        for(PeerDescriptor peerDescriptor: topology.keySet()) {
-            if(!peerDescriptor.equals(me)) {
-                for (String host : peerDescriptor.getLocalInterfaces()) {
-                    PingPacket pingPacket=new PingPacket(host);
-                    try {
-                        SocketClientRequestHandler socketClientRequestHandler = new SocketClientRequestHandler(host, peerDescriptor.getPort(), true);
-                        socketClientRequestHandler.send(marshaller.marshall(pingPacket));
-                        byte[] replyData = socketClientRequestHandler.receive();
-                        Object reply = marshaller.unMarshall(replyData);
-                        processPongPacket(reply);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    } catch (ClassNotFoundException e) {
-                        e.printStackTrace();
-                    }
+        for (PeerDescriptor peerDescriptor : topology.keySet()) {
+            pingPeer(peerDescriptor);
+        }
+    }
+
+    private void pingPeer(PeerDescriptor peerDescriptor) {
+        if (!peerDescriptor.equals(me)) {
+            for (String host : peerDescriptor.getLocalInterfaces()) {
+                PingPacket pingPacket = new PingPacket(me, host);
+                try {
+                    SocketClientRequestHandler socketClientRequestHandler = new SocketClientRequestHandler(host, peerDescriptor.getPort(), true);
+                    socketClientRequestHandler.send(marshaller.marshall(pingPacket));
+                    byte[] replyData = socketClientRequestHandler.receive();
+                    Object reply = marshaller.unMarshall(replyData);
+                    processPongPacket(reply);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } catch (ClassNotFoundException e) {
+                    e.printStackTrace();
                 }
             }
         }
@@ -248,6 +253,12 @@ public class MessageRouter {
                 }
                 if (!topology.get(me).contains(pongPacket.getDescriptor())) {
                     topology.get(me).add(pongPacket.getDescriptor());
+                    try {
+                        listeners.forEach(listener -> listener.routeDiscovered(
+                                new RouteAnnouncement(me, pongPacket.getDescriptor())));
+                    }catch (Exception e){
+                        e.printStackTrace();
+                    }
                 }
                 this.reachableRoutes.put(pongPacket.getDescriptor(), pongPacket.getInetAddress());
             }
@@ -259,61 +270,60 @@ public class MessageRouter {
     }
 
     public void processGossipPacket(GossipPacket gossipPacket) {
-        Message message=gossipPacket.getMessage();
+        Message message = gossipPacket.getMessage();
         processMessage(message);
-        List<PeerDescriptor> nextPeers=reachableRoutes.keySet().stream()
+        List<PeerDescriptor> nextPeers = reachableRoutes.keySet().stream()
                 .filter(peerDescriptor -> !gossipPacket.getVisitedList().contains(peerDescriptor))
                 .collect(Collectors.toList());
 
-        if(!nextPeers.isEmpty()){
+        if (!nextPeers.isEmpty()) {
             gossipPacket.getVisitedList().addAll(nextPeers);
             sendGossipPacket(gossipPacket, nextPeers);
         }
-
 
 
     }
 
     private void processMessage(Message message) {
 
-        if(message instanceof AnnouncementMessage){
-            List<Announcement> announcements=((AnnouncementMessage) message).getAnnouncement();
+        if (message instanceof AnnouncementMessage) {
+            List<Announcement> announcements = ((AnnouncementMessage) message).getAnnouncement();
 
             announcements.forEach(announcement -> processAnnouncements(announcement));
-        } else if(message instanceof ApplicationMessage){
+        } else if (message instanceof ApplicationMessage) {
             queueManager.processMessage((ApplicationMessage) message);
         }
     }
 
     private void processAnnouncements(Announcement announcement) {
-        if(announcement instanceof PeerAnnouncement){
-            PeerAnnouncement peerAnnouncement= (PeerAnnouncement) announcement;
-            if(!topology.containsKey(peerAnnouncement.getPeerDescriptor())){
+        if (announcement instanceof PeerAnnouncement) {
+            PeerAnnouncement peerAnnouncement = (PeerAnnouncement) announcement;
+            if (!topology.containsKey(peerAnnouncement.getPeerDescriptor())) {
                 topology.put(peerAnnouncement.getPeerDescriptor(), new CopyOnWriteArrayList<>());
             }
-        }else if(announcement instanceof RouteAnnouncement){
-            RouteAnnouncement routeAnnouncement= (RouteAnnouncement) announcement;
-            if(!topology.containsKey(routeAnnouncement.getSource())){
+        } else if (announcement instanceof RouteAnnouncement) {
+            RouteAnnouncement routeAnnouncement = (RouteAnnouncement) announcement;
+            if (!topology.containsKey(routeAnnouncement.getSource())) {
                 topology.put(routeAnnouncement.getSource(), new CopyOnWriteArrayList<>());
             }
-            if(!topology.get(routeAnnouncement.getSource()).contains(routeAnnouncement.getDestination())){
+            if (!topology.get(routeAnnouncement.getSource()).contains(routeAnnouncement.getDestination())) {
                 topology.get(routeAnnouncement.getSource()).add(routeAnnouncement.getDestination());
-                try{
-                    listeners.forEach(listener->listener.routeDiscovered(routeAnnouncement));
-                }catch (Throwable t){
+                try {
+                    listeners.forEach(listener -> listener.routeDiscovered(routeAnnouncement));
+                } catch (Throwable t) {
                     t.printStackTrace();
                 }
             }
-        }else if(announcement instanceof ServiceAnnouncement){
-            ServiceAnnouncement serviceAnnouncement=(ServiceAnnouncement)announcement;
-            if(!serviceList.containsKey(serviceAnnouncement.getServiceDescriptor())){
+        } else if (announcement instanceof ServiceAnnouncement) {
+            ServiceAnnouncement serviceAnnouncement = (ServiceAnnouncement) announcement;
+            if (!serviceList.containsKey(serviceAnnouncement.getServiceDescriptor())) {
                 serviceList.put(serviceAnnouncement.getServiceDescriptor(), new CopyOnWriteArrayList<>());
             }
-            if(!serviceList.get(serviceAnnouncement.getServiceDescriptor()).contains(serviceAnnouncement.getPeerDescriptor())){
+            if (!serviceList.get(serviceAnnouncement.getServiceDescriptor()).contains(serviceAnnouncement.getPeerDescriptor())) {
                 serviceList.get(serviceAnnouncement.getServiceDescriptor()).add(serviceAnnouncement.getPeerDescriptor());
-                try{
-                    listeners.forEach(listener->listener.serviceDiscovered(serviceAnnouncement));
-                }catch (Throwable t){
+                try {
+                    listeners.forEach(listener -> listener.serviceDiscovered(serviceAnnouncement));
+                } catch (Throwable t) {
                     t.printStackTrace();
                 }
             }
@@ -327,7 +337,6 @@ public class MessageRouter {
     }
 
 
-
     public void processDirectPacket(DirectPacket directPacket) {
         processMessage(directPacket.getMessage());
     }
@@ -338,5 +347,26 @@ public class MessageRouter {
 
     public void addAnnouncementListener(AnnouncementListener listener) {
         this.listeners.add(listener);
+    }
+
+    public void processPingPacket(PingPacket packet) {
+
+        pingExecutor.execute(() -> {
+            PeerDescriptor descriptor = packet.getPeerDescriptor();
+            if (!reachableRoutes.containsKey(descriptor)) {
+                pingPeer(descriptor);
+            }
+            if (!topology.containsKey(descriptor)) {
+                topology.put(descriptor, new CopyOnWriteArrayList<>());
+            }
+            if (!topology.get(descriptor).contains(me)) {
+                topology.get(descriptor).add(me);
+                try {
+                    listeners.forEach(listener -> listener.routeDiscovered(new RouteAnnouncement(descriptor, me)));
+                }catch (Exception e){
+                    e.printStackTrace();
+                }
+            }
+        });
     }
 }

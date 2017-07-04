@@ -2,9 +2,7 @@ package br.ufpe.cin.routesmq;
 
 import br.ufpe.cin.routesmq.distribution.Configuration;
 import br.ufpe.cin.routesmq.distribution.PeerManager;
-import br.ufpe.cin.routesmq.distribution.message.Destination;
-import br.ufpe.cin.routesmq.distribution.message.PeerApplicationMessage;
-import br.ufpe.cin.routesmq.distribution.message.PeerDestination;
+import br.ufpe.cin.routesmq.distribution.message.*;
 import br.ufpe.cin.routesmq.distribution.service.ServiceDescriptor;
 import br.ufpe.cin.routesmq.services.DirectMessageListener;
 import br.ufpe.cin.routesmq.services.ServiceMessageListener;
@@ -48,6 +46,12 @@ public class RoutesMQ {
            peerApplicationMessage.setPayload(message);
            peerApplicationMessage.setSource(peerManager.getMe());
            this.peerManager.getQueueManager().queueMessage(peerApplicationMessage);
+       }else if(destination instanceof ServiceDestination){
+           ServiceApplicationMessage serviceApplicationMessage = new ServiceApplicationMessage();
+           serviceApplicationMessage.setDestination(destination);
+           serviceApplicationMessage.setPayload(message);
+           serviceApplicationMessage.setSource(peerManager.getMe());
+           this.peerManager.getQueueManager().queueMessage(serviceApplicationMessage);
        }
 
     }

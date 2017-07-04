@@ -132,6 +132,7 @@ public class SocketServerRequestHandler {
 
 
 		if(packet instanceof PingPacket){
+			router.processPingPacket((PingPacket) packet);
 			PongPacket pongPacket=new PongPacket(router.getMe(), ((PingPacket) packet).getInetAddress());
 			return marshaller.marshall(pongPacket);
 		}

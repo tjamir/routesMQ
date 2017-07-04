@@ -165,6 +165,14 @@ public class PeerManager {
 
     public void provideService(ServiceDescriptor serviceDescriptor) {
         this.providedServices.add(serviceDescriptor);
+        if(!messageRouter.getServiceList().containsKey(serviceDescriptor)){
+            messageRouter.getServiceList().put(serviceDescriptor, new CopyOnWriteArrayList<>());
+        }
+
+        if(!messageRouter.getServiceList().get(serviceDescriptor).contains(me)){
+            messageRouter.getServiceList().get(serviceDescriptor).add(me);
+        }
+
     }
 
     public PeerDescriptor getMe() {

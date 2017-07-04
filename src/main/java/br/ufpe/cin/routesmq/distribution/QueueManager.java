@@ -11,7 +11,9 @@ import br.ufpe.cin.routesmq.services.ServiceMessageListener;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -38,8 +40,7 @@ public class QueueManager implements AnnouncementListener{
 
     private List<DirectMessageListener> directMessageListeners;
     private List<ServiceMessageListener> serviceMessageListeners;
-
-
+    private Set outgoingMessages;
 
 
     public  void init() throws IOException {
@@ -49,6 +50,7 @@ public class QueueManager implements AnnouncementListener{
         outgoingWorkers = Executors.newFixedThreadPool(NUMBER_OF_WORKERS);
         directMessageListeners = new CopyOnWriteArrayList<>();
         serviceMessageListeners=new CopyOnWriteArrayList<>();
+        outgoingMessages=new CopyOnWriteArraySet<>();
 
         mapDBMessageRepository.setLocalFile(messageRouter.getMe().getPeerId().toString());
         mapDBMessageRepository.init();
@@ -77,13 +79,15 @@ public class QueueManager implements AnnouncementListener{
 
     @Override
     public void routeDiscovered(RouteAnnouncement routeAnnouncement) {
-        System.out.println("Route found to"+routeAnnouncement.getDestination());
         messageRepository.getMessages(new PeerDestination(routeAnnouncement.getDestination())).forEach(message ->
         outgoingWorkers.submit(new OutgoingQueueProcessor(message)));
     }
 
     @Override
     public void serviceDiscovered(ServiceAnnouncement serviceAnnouncement) {
+        //System.out.println("Service Discovered "+serviceAnnouncement.getServiceDescriptor());
+        messageRepository.getMessages(new ServiceDestination(serviceAnnouncement.getServiceDescriptor()))
+        .forEach(message -> outgoingWorkers.submit(new OutgoingQueueProcessor(message)));
 
     }
 
@@ -141,8 +145,15 @@ public class QueueManager implements AnnouncementListener{
 
         @Override
         public void run() {
-            if(messageRouter.sendMessage(message)){
-                messageRepository.removeMessage(message.getDestination(), message);
+            if(!outgoingMessages.contains(message)) {
+                outgoingMessages.add(message);
+                try {
+                    if (messageRouter.sendMessage(message)) {
+                        messageRepository.removeMessage(message.getDestination(), message);
+                    }
+                }finally {
+                    outgoingMessages.remove(message);
+                }
             }
 
         }

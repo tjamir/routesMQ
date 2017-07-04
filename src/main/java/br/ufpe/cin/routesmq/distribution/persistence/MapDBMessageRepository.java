@@ -80,7 +80,7 @@ public class MapDBMessageRepository implements MessageRepository {
 
     public List<ApplicationMessage> getMessages(ServiceDestination serviceDestination) {
         List<ApplicationMessage> list =new ArrayList<>();
-        list.addAll(getServiceMessageList(serviceDestination).stream().map(o -> (PeerApplicationMessage)o).collect(Collectors.toList()));
+        list.addAll(getServiceMessageList(serviceDestination).stream().map(o -> (ServiceApplicationMessage)o).collect(Collectors.toList()));
         return list;
     }
 

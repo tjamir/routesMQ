@@ -37,4 +37,28 @@ public class ServiceDescriptor implements Serializable{
     public void setServiceUUid(UUID serviceUUid) {
         this.serviceUUid = serviceUUid;
     }
+
+    @Override
+    public String toString() {
+        return "ServiceDescriptor{" +
+                "serviceName='" + serviceName + '\'' +
+                ", serviceDescription='" + serviceDescription + '\'' +
+                ", serviceUUid=" + serviceUUid +
+                '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        ServiceDescriptor that = (ServiceDescriptor) o;
+
+        return serviceUUid.equals(that.serviceUUid);
+    }
+
+    @Override
+    public int hashCode() {
+        return serviceUUid.hashCode();
+    }
 }
